@@ -53,7 +53,7 @@
         <DbProvider Name="${DbProvider}"/>
         <Write Name="WriteDB" ConnectionString="${ConnectionString}"/>
         <Read Name="ReadDb-1" ConnectionString="${ConnectionString}" Weight="100"/>
-        <Read Name="ReadDb-2" ConnectionString="${ConnectionString}"  Weight="100"  />
+        <Read Name="ReadDb-2" ConnectionString="${ConnectionString}"  />
     </Database>
     <TypeHandlers>
         <TypeHandler PropertyType="SmartSql.Test.Entities.UserInfo,SmartSql.Test" Type="${JsonTypeHandler`}">

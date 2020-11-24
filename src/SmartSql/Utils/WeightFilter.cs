@@ -11,6 +11,7 @@ namespace SmartSql.Utils
     /// </summary>
     public class WeightFilter<T>
     {
+        
         /// <summary>
         /// 选举权重源
         /// </summary>
@@ -20,7 +21,16 @@ namespace SmartSql.Utils
         {
             var random = new Random((int)Stopwatch.GetTimestamp());
             var weightSources = inWeightSources.ToList();
-            int totalWeight = weightSources.Sum(source => source.Weight);
+            int totalWeight = 0;
+            if (weightSources.Count ==1)
+            {
+                return weightSources[0];
+            }
+            else
+            {
+              totalWeight=weightSources.Sum(source => source.Weight);
+            }
+       
             int position = random.Next(1, totalWeight);
             return FindByPosition(weightSources, position);
         }

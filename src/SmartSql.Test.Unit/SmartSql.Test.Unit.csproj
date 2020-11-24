@@ -131,6 +131,9 @@
     <None Update="Maps\T_Entity.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="SmartSqlMapConfig2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="SmartSqlMapConfig.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

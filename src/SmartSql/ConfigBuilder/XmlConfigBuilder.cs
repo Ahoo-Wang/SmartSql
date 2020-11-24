@@ -28,7 +28,7 @@ namespace SmartSql.ConfigBuilder
 
         private readonly IWordsConverterBuilder _wordsConverterBuilder = new WordsConverterBuilder();
         private readonly ITokenizerBuilder _tokenizerBuilder = new TokenizerBuilder();
-        
+
         public XmlConfigBuilder(ResourceType resourceType, string resourcePath, ILoggerFactory loggerFactory = null)
         {
             _resourceType = resourceType;
@@ -153,12 +153,8 @@ namespace SmartSql.ConfigBuilder
             database.Write.DbProvider = database.DbProvider;
             var readDataSourceNodes = databaseNode.SelectNodes($"{CONFIG_PREFIX}:Read", XmlNsManager);
             if (readDataSourceNodes == null) return;
-            foreach (XmlNode readNode in readDataSourceNodes)
-            {
-                var readDb = ParseReadDataSource(readNode);
-                readDb.DbProvider = database.DbProvider;
-                database.Reads.Add(readDb.Name, readDb);
-            }
+            var readDataSources = this.ParseReadDataSource(readDataSourceNodes, database.DbProvider);
+            database.Reads.AddRange(readDataSources);
         }
 
         private DbProvider ParseDbProvider(XmlNode dbProviderNode)
@@ -226,34 +222,46 @@ namespace SmartSql.ConfigBuilder
             {
                 writeDataSource.ConnectionString = connectionString;
             }
-
+          
             return writeDataSource;
         }
-        private ReadDataSource ParseReadDataSource(XmlNode readDataSourceNode)
+        private IDictionary<string, ReadDataSource> ParseReadDataSource(XmlNodeList readDataSourceNodes, DbProvider dbProvider)
         {
-            if (readDataSourceNode == null)
-            {
-                throw new SmartSqlException("ReadDataSource can not be null.");
+            var readDataSources = new Dictionary<string, ReadDataSource>();
+            var s = new List<string>();           
+            foreach (XmlNode readDataSourceNode in readDataSourceNodes)
+            {  
+               
+                var readDataSource = new ReadDataSource();
+                if (readDataSourceNode.Attributes.TryGetValueAsString(nameof(ReadDataSource.Name), out string name, SmartSqlConfig.Properties)                )
+                {
+                    readDataSource.Name = name;
+                }
+                else
+                {
+                      throw new SmartSqlException($"Read Nodes must have Name attribute");
+                }
+                if (readDataSourceNode.Attributes.TryGetValueAsString(nameof(ReadDataSource.ConnectionString), out string connectionString, SmartSqlConfig.Properties)                )
+                {
+                    readDataSource.ConnectionString = connectionString;
+                }
+                if (readDataSourceNode.Attributes.TryGetValueAsInt32(nameof(ReadDataSource.Weight), out int weight, SmartSqlConfig.Properties)                )
+                {
+                    readDataSource.Weight = weight;
+                }
+                else
+                {
+                    if (readDataSourceNodes.Count > 1)
+                    {
+                         throw new SmartSqlException($"Read Nodes must have Weight attribute,Name is {readDataSource.Name}");
+                    }                  
+                }
+                readDataSource.DbProvider = dbProvider;
+                readDataSources.Add(readDataSource.Name, readDataSource);
             }
-            var readDataSource = new ReadDataSource();
-            if (readDataSourceNode.Attributes.TryGetValueAsString(nameof(ReadDataSource.Name), out string name, SmartSqlConfig.Properties)
-            )
-            {
-                readDataSource.Name = name;
-            }
-            if (readDataSourceNode.Attributes.TryGetValueAsString(nameof(ReadDataSource.ConnectionString), out string connectionString, SmartSqlConfig.Properties)
-            )
-            {
-                readDataSource.ConnectionString = connectionString;
-            }
-            if (readDataSourceNode.Attributes.TryGetValueAsInt32(nameof(ReadDataSource.Weight), out int weight, SmartSqlConfig.Properties)
-            )
-            {
-                readDataSource.Weight = weight;
-            }
-
-            return readDataSource;
+            return readDataSources;
         }
+
         #endregion
         #region 3. TypeHandlers
         protected override void BuildTypeHandlers()
@@ -414,7 +422,7 @@ namespace SmartSql.ConfigBuilder
             var wordsConverter = BuildWordsConverter(wordsConverterNode);
 
             var autoConverter = new AutoConverter.AutoConverter(converterName, tokenizer, wordsConverter);
-                
+
             SmartSqlConfig.AutoConverters.Add(autoConverter.Name, autoConverter);
             if (isDefault)
             {
@@ -431,7 +439,7 @@ namespace SmartSql.ConfigBuilder
             var properties = ParseProperties(tokenizerNode);
             return _tokenizerBuilder.Build(tokenizerName, properties);
         }
-        
+
         private IWordsConverter BuildWordsConverter(XmlNode wordsConverterNode)
         {
             if (!wordsConverterNode.Attributes.TryGetValueAsString("Name", out String wordsConverterName, SmartSqlConfig.Properties))
@@ -441,10 +449,10 @@ namespace SmartSql.ConfigBuilder
             var properties = ParseProperties(wordsConverterNode);
             return _wordsConverterBuilder.Build(wordsConverterName, properties);
         }
-        
+
         #endregion
-        
-        
+
+
         private IDictionary<String, object> ParseProperties(XmlNode parentNode)
         {
             var parametersNode = parentNode.SelectSingleNode($"{CONFIG_PREFIX}:Properties", XmlNsManager);

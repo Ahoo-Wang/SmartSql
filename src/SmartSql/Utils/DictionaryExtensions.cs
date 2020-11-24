@@ -39,6 +39,13 @@ namespace System.Collections.Generic
                 throw new SmartSqlException($"Can not find Parameter:{key}!");
             }
         }
+        public static void AddRange<TKey, TValue>(this IDictionary<TKey,TValue> dic, IDictionary<TKey,TValue> collection)
+        {
+            foreach(var  item in collection)
+            {
+                dic.Add(item);
+            }
+        }
 
     }
 }
